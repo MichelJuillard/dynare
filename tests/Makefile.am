@@ -215,6 +215,7 @@ MODFILES = \
 	deterministic_simulations/multiple_lead_lags/sim_lead_lag.mod \
 	deterministic_simulations/lola_solve_one_boundary.mod \
 	deterministic_simulations/linear_approximation/sw.mod \
+        deterministic_simulations/linear_approximation/lbj/rbc.mod \
 	walsh.mod \
 	measurement_errors/fs2000_corr_me_ml_mcmc/fs2000_corr_ME.mod \
 	trend_var/fs2000_nonstationary.mod \
