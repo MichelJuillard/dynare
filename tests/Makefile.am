@@ -217,7 +217,9 @@ MODFILES = \
 	deterministic_simulations/lola_solve_one_boundary.mod \
 	deterministic_simulations/linear_approximation/sw.mod \
         deterministic_simulations/linear_approximation/lbj/rbc.mod \
-	walsh.mod \
+        lmmcp/rbc.mod \
+        lmmcp/rbcii.mod \
+        walsh.mod \
 	measurement_errors/fs2000_corr_me_ml_mcmc/fs2000_corr_ME.mod \
 	trend_var/fs2000_nonstationary.mod \
 	trend_var/fs2000_log_nonstationary.mod \
