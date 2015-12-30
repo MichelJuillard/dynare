@@ -219,6 +219,8 @@ MODFILES = \
         deterministic_simulations/linear_approximation/lbj/rbc.mod \
         lmmcp/rbc.mod \
         lmmcp/rbcii.mod \
+	lmmcp/sw_lmmcp.mod \
+	lmmcp/sw_newton.mod \
         walsh.mod \
 	measurement_errors/fs2000_corr_me_ml_mcmc/fs2000_corr_ME.mod \
 	trend_var/fs2000_nonstationary.mod \
@@ -367,6 +369,9 @@ deterministic_simulations/multiple_lead_lags/sim_lead_lag_aux_vars.o.trs: determ
 
 deterministic_simulations/multiple_lead_lags/sim_lead_lag.m.trs: deterministic_simulations/multiple_lead_lags/sim_base.m.trs deterministic_simulations/multiple_lead_lags/sim_lead_lag_aux_vars.m.trs
 deterministic_simulations/multiple_lead_lags/sim_lead_lag.o.trs: deterministic_simulations/multiple_lead_lags/sim_base.o.trs deterministic_simulations/multiple_lead_lags/sim_lead_lag_aux_vars.o.trs
+
+lmmcp/sw_newton.m.trs: lmmcp/sw_lmmcp.m.trs
+lmmcp/sw_newton.o.trs: lmmcp/sw_lmmcp.o.trs
 
 # Matlab TRS Files
 M_TRS_FILES = $(patsubst %.mod, %.m.trs, $(MODFILES))
