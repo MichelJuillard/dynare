@@ -436,6 +436,9 @@ observation_trends_and_prefiltering/ML/Trend_loglinear_no_prefilter_first_obs.o.
 observation_trends_and_prefiltering/ML/Trend_loglinear_no_prefilter.m.trs: observation_trends_and_prefiltering/ML/Trend_no_prefilter.m.trs
 observation_trends_and_prefiltering/ML/Trend_loglinear_no_prefilter.o.trs: observation_trends_and_prefiltering/ML/Trend_no_prefilter.o.trs
 
+lmmcp/sw_newton.m.trs: lmmcp/sw_lmmcp.m.trs
+lmmcp/sw_newton.o.trs: lmmcp/sw_lmmcp.o.trs
+
 # Matlab TRS Files
 M_TRS_FILES = $(patsubst %.mod, %.m.trs, $(MODFILES))
 M_TRS_FILES += run_block_byte_tests_matlab.m.trs run_reporting_test_matlab.m.trs run_all_unitary_tests.m.trs
