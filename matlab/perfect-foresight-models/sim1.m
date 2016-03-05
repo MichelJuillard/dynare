@@ -54,9 +54,11 @@ params = M.params;
 
 i_cols_1 = nonzeros(lead_lag_incidence(2:3,:)');
 i_cols_A1 = find(lead_lag_incidence(2:3,:)');
+i_cols_A1 = i_cols_A1(:);
 i_cols_T = nonzeros(lead_lag_incidence(1:2,:)');
 i_cols_0 = nonzeros(lead_lag_incidence(2,:)');
 i_cols_A0 = find(lead_lag_incidence(2,:)');
+i_cols_A0 = i_cols_A0(:);
 i_cols_j = (1:nd)';
 i_upd = maximum_lag*ny+(1:periods*ny);
 
@@ -89,22 +91,23 @@ for iter = 1:options.simul.maxit
     h2 = clock ;
     i_rows = (1:ny)';
     i_cols_A = find(lead_lag_incidence');
+    i_cols_A = i_cols_A(:);
     i_cols = i_cols_A+(maximum_lag-1)*ny;
     m = 0;
     for it = (maximum_lag+1):(maximum_lag+periods)
         [d1,jacobian] = model_dynamic(Y(i_cols), exogenousvariables, params, steadystate,it);
         if it == maximum_lag+periods && it == maximum_lag+1
             [r,c,v] = find(jacobian(:,i_cols_0));
-            iA((1:length(v))+m,:) = [i_rows(r),i_cols_A0(c),v];
+            iA((1:length(v))+m,:) = [i_rows(r(:)),i_cols_A0(c(:)),v(:)];
         elseif it == maximum_lag+periods
             [r,c,v] = find(jacobian(:,i_cols_T));
-            iA((1:length(v))+m,:) = [i_rows(r),i_cols_A(i_cols_T(c)),v];
+            iA((1:length(v))+m,:) = [i_rows(r(:)),i_cols_A(i_cols_T(c(:))),v(:)];
         elseif it == maximum_lag+1
             [r,c,v] = find(jacobian(:,i_cols_1));
-            iA((1:length(v))+m,:) = [i_rows(r),i_cols_A1(c),v];
+            iA((1:length(v))+m,:) = [i_rows(r(:)),i_cols_A1(c(:)),v(:)];
         else
             [r,c,v] = find(jacobian(:,i_cols_j));
-            iA((1:length(v))+m,:) = [i_rows(r),i_cols_A(c),v];
+            iA((1:length(v))+m,:) = [i_rows(r(:)),i_cols_A(c(:)),v(:)];
         end
         m = m + length(v);
         res(i_rows) = d1;
