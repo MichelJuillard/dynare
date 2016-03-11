@@ -1,5 +1,4 @@
 function [ts, DynareResults] = extended_path(initialconditions, samplesize, exogenousvariables, DynareOptions, DynareModel, DynareResults)
-
 % Stochastic simulation of a non linear DSGE model using the Extended Path method (Fair and Taylor 1983). A time
 % series of size T  is obtained by solving T perfect foresight models.
 %
@@ -35,7 +34,6 @@ function [ts, DynareResults] = extended_path(initialconditions, samplesize, exog
 %
 % You should have received a copy of the GNU General Public License
 % along with Dynare.  If not, see <http://www.gnu.org/licenses/>.
-
 [initialconditions, innovations, pfm, ep, verbosity, DynareOptions] = ...
     extended_path_initialization(initialconditions, samplesize, exogenousvariables, DynareOptions, DynareModel, DynareResults);
 
