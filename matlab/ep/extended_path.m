@@ -14,7 +14,7 @@ function [ts,results] = extended_path(initial_conditions,sample_size, exogenousv
 %
 % SPECIAL REQUIREMENTS
 
-% Copyright (C) 2009-2015 Dynare Team
+% Copyright (C) 2009-2016 Dynare Team
 %
 % This file is part of Dynare.
 %
@@ -41,11 +41,17 @@ DynareOptions.simul.maxit = ep.maxit;
 % Prepare a structure needed by the matlab implementation of the perfect foresight model solver
 pfm = setup_stochastic_perfect_foresight_model_solver(DynareModel,DynareOptions,DynareResults);
 
+% Check that the user did not use varexo_det
+if DynareModel.exo_det_nbr~=0
+    error('Extended path does not support varexo_det.')
+end
+
 endo_nbr = DynareModel.endo_nbr;
 exo_nbr = DynareModel.exo_nbr;
 maximum_lag = DynareModel.maximum_lag;
 maximum_lead = DynareModel.maximum_lead;
-epreplic_nbr = ep.replic_nbr;
+
+replic_nbr = ep.replic_nbr;
 steady_state = DynareResults.steady_state;
 dynatol = DynareOptions.dynatol;
 
@@ -189,6 +195,8 @@ DynareResults.ep.failures.previous_period = cell(0);
 DynareResults.ep.failures.shocks = cell(0);
 
 DynareResults.exo_simul = shocks;
+
+oo_.exo_simul = shocks;
 
 % Initializes some variables.
 t  = 1;

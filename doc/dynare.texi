@@ -4032,6 +4032,12 @@ Default value: @code{1e-6}.
 Saves the contemporaneous correlation between the endogenous variables in @code{oo_.contemporaneous_correlation}.
 Requires the @code{nocorr}-option not to be set.
 
+@item spectral_density 
+@anchor{spectral_density} 
+Triggers the computation and display of the theoretical spectral density of the (filtered) model variables. 
+Results are stored in @code{oo_.SpectralDensity}, defined below.
+Default: do not request spectral density estimates
+
 @end table
 
 @outputhead
@@ -4167,6 +4173,13 @@ After a run of @code{stoch_simul} with the
 and simulated contemporaneous correlations otherwise. The variables are arranged in declaration order.
 @end defvr
 
+@anchor{oo_.SpectralDensity}
+@defvr {MATLAB/Octave variable} oo_.SpectralDensity
+After a run of @code{stoch_simul} with option @code{spectral_density} contains the spectral density
+of the model variables. There will be a @code{nvars} by @code{nfrequencies} subfield
+@code{freqs} storing the respective frequency grid points ranging from 0 to 2*pi and a 
+same sized subfield @code{density} storing the corresponding density.
+@end defvr
 
 @defvr {MATLAB/Octave variable} oo_.irfs
 After a run of @code{stoch_simul} with option @code{irf} different
@@ -4912,7 +4925,7 @@ first observation of the rolling window.
 @item prefilter = @var{INTEGER}
 @anchor{prefilter}
 A value of @code{1} means that the estimation procedure will demean
-each data series by its empirical mean. Default: @code{0}, @i{i.e.} no prefiltering
+each data series by its empirical mean. If the (@ref{loglinear}) option without the (@ref{logdata}) option is requested, the data will first be logged and then demeaned. Default: @code{0}, @i{i.e.} no prefiltering
 
 @item presample = @var{INTEGER}
 @anchor{presample}
@@ -4972,13 +4985,19 @@ variables
 
 @item 2
 For nonstationary models: a wide prior is used with an initial matrix
-of variance of the error of forecast diagonal with 10 on the diagonal
+of variance of the error of forecast diagonal with 10 on the diagonal 
+(follows the suggestion of @cite{Harvey and Phillips(1979)})
 
 @item 3
 For nonstationary models: use a diffuse filter (use rather the @code{diffuse_filter} option)
 
 @item 4
 The filter is initialized with the fixed point of the Riccati equation
+
+@item 5
+Use i) option 2 for the non-stationary elements by setting their initial variance in the 
+forecast error matrix to 10 on the diagonal and all covariances to 0 and ii) option 1 for the stationary elements.
+
 @end table
 
 @noindent
@@ -5041,8 +5060,12 @@ Metropolis-Hastings chain. Default: 2*@code{mh_scale}
 
 @item mh_recover
 @anchor{mh_recover} Attempts to recover a Metropolis-Hastings
-simulation that crashed prematurely. Shouldn't be used together with
-@code{load_mh_file}
+simulation that crashed prematurely, starting with the last available saved 
+@code{mh}-file. Shouldn't be used together with
+@code{load_mh_file} or a different @code{mh_replic} than in the crashed run. 
+To assure a neat continuation of the chain with the same proposal density, you should 
+provide the @code{mode_file} used in the previous 
+run or the same user-defined @code{mcmc_jumping_covariance} when using this option.
 
 @item mh_mode = @var{INTEGER}
 @dots{}
@@ -5650,8 +5673,11 @@ Note that the nonstationary variables in the model must be integrated processes 
 
 @item selected_variables_only
 @anchor{selected_variables_only}
-Only run the smoother on the variables listed just after the
-@code{estimation} command. This options is incompatible with requesting classical frequentist forecasts and will be overridden in this case. Default: run the smoother on all the
+Only run the classical smoother on the variables listed just after the
+@code{estimation} command. This options is incompatible with requesting classical 
+frequentist forecasts and will be overridden in this case. When using Bayesian estimation,
+the smoother is by default only run on the declared endogenous variables.
+Default: run the smoother on all the
 declared endogenous variables.
 
 @item cova_compute = @var{INTEGER}
@@ -5679,8 +5705,7 @@ using a standard Kalman filter.
 @xref{irf}. Only used if @ref{bayesian_irf} is passed.
 
 @item irf_shocks = ( @var{VARIABLE_NAME} [[,] @var{VARIABLE_NAME} @dots{}] )
-@xref{irf_shocks}. Only used if @ref{bayesian_irf} is passed. Cannot be used
-with @ref{dsge_var}.
+@xref{irf_shocks}. Only used if @ref{bayesian_irf} is passed.
 
 @item irf_plot_threshold = @var{DOUBLE}
 @xref{irf_plot_threshold}. Only used if @ref{bayesian_irf} is passed.
@@ -5987,7 +6012,13 @@ non-requested variables will be simply left out in this order.
 
 @defvr {MATLAB/Octave variable} oo_.FilteredVariablesKStepAheadVariances
 Variable set by the @code{estimation} command, if it is used with the
-@code{filter_step_ahead} option. It is a 4 dimensional array where the k-steps are stored along the first dimension, while the fourth dimension of the array provides the observation for which the forecast has been made. The second and third dimension provide the respective variables. For example, if @code{filter_step_ahead=[1 2 4]} and @code{nobs=200}, the element (3,4,5,204) stores the four period ahead forecast error covariance between variable 4 and variable 5, computed at time t=200 for time t=204. Padding with zeros is analogous to @code{oo_.FilteredVariablesKStepAhead}. 
+@code{filter_step_ahead} option. It is a 4 dimensional array where the k-steps 
+are stored along the first dimension, while the fourth dimension of the array 
+provides the observation for which the forecast has been made. The second and third 
+dimension provide the respective variables. 
+For example, if @code{filter_step_ahead=[1 2 4]} and @code{nobs=200}, the element (3,4,5,204) 
+stores the four period ahead forecast error covariance between variable 4 and variable 5, 
+computed at time t=200 for time t=204. Padding with zeros and variable ordering is analogous to @code{oo_.FilteredVariablesKStepAhead}. 
 @end defvr
 
 @defvr {MATLAB/Octave variable} oo_.Filtered_Variables_X_step_ahead
@@ -5998,6 +6029,18 @@ Variable set by the @code{estimation} command, if it is used with the @code{filt
 The nth entry stores the k-step ahead filtered variable computed at time n for time n+k.
 @end defvr
 
+@defvr {MATLAB/Octave variable} oo_.FilteredVariablesShockDecomposition
+Variable set by the @code{estimation} command, if it is used with the
+@code{filter_step_ahead} option. The k-steps are stored along the rows while the columns 
+indicate the respective variables.  The third dimension corresponds to the shocks in declaration order. 
+The fourth dimension of the array provides the
+observation for which the forecast has been made. For example, if @code{filter_step_ahead=[1 2 4]} 
+and @code{nobs=200}, the element (3,5,2,204) stores the contribution of the second shock to the 
+four period ahead filtered value of variable 5 (in deviations from the mean) computed at time t=200 for time t=204. The periods at the beginning 
+and end of the sample for which no forecasts can be made, e.g. entries (1,5,1) and 
+(1,5,204) in the example, are set to zero. Padding with zeros and variable ordering is analogous to 
+@code{oo_.FilteredVariablesKStepAhead}. 
+@end defvr
 
 
 @defvr {MATLAB/Octave variable} oo_.PosteriorIRF.dsge
@@ -6426,6 +6469,18 @@ more details.
 
 @item filter_step_ahead = [@var{INTEGER1}:@var{INTEGER2}]
 @xref{filter_step_ahead}.
+
+@item prefilter = @var{INTEGER}
+@xref{prefilter}.
+
+@item loglinear
+@xref{loglinear}.
+
+@item first_obs = @var{INTEGER}
+@xref{first_obs}.
+
+@item filter_decomposition
+@xref{filter_decomposition}.
 
 @end table
 
@@ -7152,8 +7207,10 @@ This command accepts the following options:
 
 @table @code
 
+@anchor{planner_discount}
 @item planner_discount = @var{EXPRESSION}
-Declares the discount factor of the central planner. Default: @code{1.0}
+Declares or reassigns the discount factor of the central planner
+@code{optimal_policy_discount_factor}. Default: @code{1.0}
 
 @item instruments = (@var{VARIABLE_NAME},@dots{})
 Declares instrument variables for the computation of the steady state
@@ -7246,7 +7303,7 @@ This command accepts all options of @code{stoch_simul}, plus:
 @table @code
 
 @item planner_discount = @var{EXPRESSION}
-Declares the discount factor of the central planner. Default: @code{1.0}
+@xref{planner_discount}
 
 @item instruments = (@var{VARIABLE_NAME},@dots{})
 Declares instrument variables for the computation of the steady state
@@ -13059,6 +13116,48 @@ A @code{1*Nblck} array of doubles. Current acceptance ratios.
 
 @end deffn
 
+
+@deffn {MATLAB/Octave command line} prior [options[, ...]];
+
+Prints various informations about the prior distribution depending on
+the options. If no options are provided, the command returns the list
+of available options. Following options are available:
+
+@table @code
+
+@item table
+Prints a table describing the marginal prior distributions (mean, mode,
+std., lower and upper bounds, HPD interval).
+
+@item moments
+Computes and displays first and second order moments of the endogenous
+variables at the prior mode (considering the linearized version of the
+model).
+
+@item optimize
+Optimizes the prior density (starting from a random initial guess). The
+parameters such that the steady state does not exist or does not satisfy
+the Blanchard and Kahn conditions are penalized, as they would be when
+maximizing the posterior density. If a significant proportion of the
+prior mass is defined over such regions, the optimization algorithm may
+fail to converge to the true solution (the prior mode). 
+
+@item simulate
+Computes the effective prior mass using a Monte-Carlo. Ideally the
+effective prior mass should be equal to 1, otherwise problems may arise
+when maximising the posterior density and model comparison based
+on marginal densities may be unfair. When comparing models, say @math{A}
+and @math{B}, the marginal densities, @math{m_A} and @math{m_B}, should
+be corrected for the estimated effective prior mass @math{p_A\neq p_B
+\leq 1} so that the prior mass of the compared models are identical.
+
+@item plot
+Plots the marginal prior density.
+
+@end table
+
+@end deffn
+
 @node Bibliography
 @chapter Bibliography
 
@@ -13182,6 +13281,11 @@ of Statistical Functions with Simulated Annealing,'' @i{Journal of Econometrics}
 Hansen, Nikolaus and Stefan Kern (2004): ``Evaluating the CMA Evolution Strategy 
 on Multimodal Test Functions''. In: @i{Eighth International Conference on Parallel 
 Problem Solving from Nature PPSN VIII, Proceedings}, Berlin: Springer, 282--291 
+
+@item
+Harvey, Andrew C. and Garry D.A. Phillips (1979): ``Maximum likelihood estimation of 
+regression models with autoregressive-moving average disturbances,''
+@i{Biometrika}, 66(1), 49--58
 
 @item
 Herbst, Edward (2015):

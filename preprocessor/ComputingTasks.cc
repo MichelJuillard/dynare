@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2003-2015 Dynare Team
+ * Copyright (C) 2003-2016 Dynare Team
  *
  * This file is part of Dynare.
  *
@@ -559,13 +559,6 @@ EstimationStatement::checkPass(ModFileStructure &mod_file_struct, WarningConsoli
 
   it = options_list.num_options.find("dsge_var");
   if (it != options_list.num_options.end())
-    // Ensure that irf_shocks & dsge_var have not both been passed
-    if (options_list.symbol_list_options.find("irf_shocks") != options_list.symbol_list_options.end())
-      {
-        cerr << "The irf_shocks and dsge_var options may not both be passed to estimation." << endl;
-        exit(EXIT_FAILURE);
-      }
-    else
       // Fill in mod_file_struct.dsge_var_calibrated
       mod_file_struct.dsge_var_calibrated = it->second;
 
@@ -1021,7 +1014,7 @@ ObservationTrendsStatement::ObservationTrendsStatement(const trend_elements_t &t
 void
 ObservationTrendsStatement::writeOutput(ostream &output, const string &basename, bool minimal_workspace) const
 {
-  output << "options_.trend_coeff_ = {};" << endl;
+  output << "options_.trend_coeff = {};" << endl;
 
   trend_elements_t::const_iterator it;
 

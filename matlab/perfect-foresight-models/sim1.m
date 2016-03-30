@@ -12,7 +12,7 @@ function [endogenousvariables, info] = sim1(endogenousvariables, exogenousvariab
 % SPECIAL REQUIREMENTS
 %   None.
 
-% Copyright (C) 1996-2015 Dynare Team
+% Copyright (C) 1996-2016 Dynare Team
 %
 % This file is part of Dynare.
 %

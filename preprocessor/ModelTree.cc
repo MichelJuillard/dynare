@@ -430,8 +430,20 @@ ModelTree::computePrologueAndEpilogue(const jacob_map_t &static_jacobian_arg, ve
       equation_reordered[i] = i;
       variable_reordered[*it] = i;
     }
-  for (jacob_map_t::const_iterator it = static_jacobian_arg.begin(); it != static_jacobian_arg.end(); it++)
-    IM[it->first.first * n + endo2eq[it->first.second]] = true;
+  if (cutoff == 0)
+    {
+      set<pair<int, int> > endo;
+      for (int i = 0; i < n; i++)
+        {
+          endo.clear();
+          equations[i]->collectEndogenous(endo);
+          for (set<pair<int, int> >::const_iterator it = endo.begin(); it != endo.end(); it++)
+            IM[i * n + endo2eq[it->first]] = true;
+        }
+    }
+  else
+    for (jacob_map_t::const_iterator it = static_jacobian_arg.begin(); it != static_jacobian_arg.end(); it++)
+      IM[it->first.first * n + endo2eq[it->first.second]] = true;
   bool something_has_been_done = true;
   prologue = 0;
   int k = 0;
@@ -632,8 +644,22 @@ ModelTree::computeBlockDecompositionAndFeedbackVariablesForEachBlock(const jacob
       reverse_equation_reordered[equation_reordered[i]] = i;
       reverse_variable_reordered[variable_reordered[i]] = i;
     }
+  jacob_map_t tmp_normalized_contemporaneous_jacobian;
+  if (cutoff == 0)
+    {
+      set<pair<int, int> > endo;
+      for (int i = 0; i < nb_var; i++)
+        {
+          endo.clear();
+          equations[i]->collectEndogenous(endo);
+          for (set<pair<int, int> >::const_iterator it = endo.begin(); it != endo.end(); it++)
+            tmp_normalized_contemporaneous_jacobian[make_pair(i, it->first)] = 1;
 
-  for (jacob_map_t::const_iterator it = static_jacobian.begin(); it != static_jacobian.end(); it++)
+        }
+    }
+  else
+    tmp_normalized_contemporaneous_jacobian = static_jacobian;
+  for (jacob_map_t::const_iterator it = tmp_normalized_contemporaneous_jacobian.begin(); it != tmp_normalized_contemporaneous_jacobian.end(); it++)
     if (reverse_equation_reordered[it->first.first] >= (int) prologue && reverse_equation_reordered[it->first.first] < (int) (nb_var - epilogue)
         && reverse_variable_reordered[it->first.second] >= (int) prologue && reverse_variable_reordered[it->first.second] < (int) (nb_var - epilogue)
         && it->first.first != endo2eq[it->first.second])
@@ -1116,7 +1142,7 @@ ModelTree::computeJacobian(const set<int> &vars)
             continue;
           first_derivatives[make_pair(eq, *it)] = d1;
           ++NNZDerivatives[0];
-        } 
+        }
     }
 }
 
@@ -1189,24 +1215,50 @@ ModelTree::computeThirdDerivatives(const set<int> &vars)
 void
 ModelTree::computeTemporaryTerms(bool is_matlab)
 {
-  map<expr_t, int> reference_count;
+  map<expr_t, pair<int, NodeTreeReference> > reference_count;
   temporary_terms.clear();
+  temporary_terms_res.clear();
+  temporary_terms_g1.clear();
+  temporary_terms_g2.clear();
+  temporary_terms_g3.clear();
+  map<NodeTreeReference, temporary_terms_t> temp_terms_map;
+  temp_terms_map[eResiduals]=temporary_terms_res;
+  temp_terms_map[eFirstDeriv]=temporary_terms_g1;
+  temp_terms_map[eSecondDeriv]=temporary_terms_g2;
+  temp_terms_map[eThirdDeriv]=temporary_terms_g3;
 
   for (vector<BinaryOpNode *>::iterator it = equations.begin();
        it != equations.end(); it++)
-    (*it)->computeTemporaryTerms(reference_count, temporary_terms, is_matlab);
+    (*it)->computeTemporaryTerms(reference_count,
+                                 temp_terms_map,
+                                 is_matlab, eResiduals);
 
   for (first_derivatives_t::iterator it = first_derivatives.begin();
        it != first_derivatives.end(); it++)
-    it->second->computeTemporaryTerms(reference_count, temporary_terms, is_matlab);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      is_matlab, eFirstDeriv);
 
   for (second_derivatives_t::iterator it = second_derivatives.begin();
        it != second_derivatives.end(); it++)
-    it->second->computeTemporaryTerms(reference_count, temporary_terms, is_matlab);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      is_matlab, eSecondDeriv);
 
   for (third_derivatives_t::iterator it = third_derivatives.begin();
        it != third_derivatives.end(); it++)
-    it->second->computeTemporaryTerms(reference_count, temporary_terms, is_matlab);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      is_matlab, eThirdDeriv);
+
+  for (map<NodeTreeReference, temporary_terms_t>::const_iterator it = temp_terms_map.begin();
+       it != temp_terms_map.end(); it++)
+    temporary_terms.insert(it->second.begin(), it->second.end());
+
+  temporary_terms_res = temp_terms_map[eResiduals];
+  temporary_terms_g1  = temp_terms_map[eFirstDeriv];
+  temporary_terms_g2  = temp_terms_map[eSecondDeriv];
+  temporary_terms_g3  = temp_terms_map[eThirdDeriv];
 }
 
 void
@@ -1215,7 +1267,6 @@ ModelTree::writeTemporaryTerms(const temporary_terms_t &tt, ostream &output,
 {
   // Local var used to keep track of temp nodes already written
   temporary_terms_t tt2;
-
   for (temporary_terms_t::const_iterator it = tt.begin();
        it != tt.end(); it++)
     {
@@ -1310,6 +1361,12 @@ ModelTree::writeModelLocalVariables(ostream &output, ExprNodeOutputType output_t
 void
 ModelTree::writeModelEquations(ostream &output, ExprNodeOutputType output_type) const
 {
+  temporary_terms_t temp_terms;
+  if (IS_JULIA(output_type))
+    temp_terms = temporary_terms_res;
+  else
+    temp_terms = temporary_terms;
+
   for (int eq = 0; eq < (int) equations.size(); eq++)
     {
       BinaryOpNode *eq_node = equations[eq];
@@ -1331,13 +1388,13 @@ ModelTree::writeModelEquations(ostream &output, ExprNodeOutputType output_type) 
           if (IS_JULIA(output_type))
             output << "  @inbounds ";
           output << "lhs =";
-          lhs->writeOutput(output, output_type, temporary_terms);
+          lhs->writeOutput(output, output_type, temp_terms);
           output << ";" << endl;
 
           if (IS_JULIA(output_type))
             output << "  @inbounds ";
           output << "rhs =";
-          rhs->writeOutput(output, output_type, temporary_terms);
+          rhs->writeOutput(output, output_type, temp_terms);
           output << ";" << endl;
 
           if (IS_JULIA(output_type))
@@ -1355,7 +1412,7 @@ ModelTree::writeModelEquations(ostream &output, ExprNodeOutputType output_type) 
                  << eq + ARRAY_SUBSCRIPT_OFFSET(output_type)
                  << RIGHT_ARRAY_SUBSCRIPT(output_type)
                  << " = ";
-          lhs->writeOutput(output, output_type, temporary_terms);
+          lhs->writeOutput(output, output_type, temp_terms);
           output << ";" << endl;
         }
     }
@@ -1604,7 +1661,7 @@ ModelTree::computeParamsDerivatives()
 {
   set<int> deriv_id_set;
   addAllParamDerivId(deriv_id_set);
-  
+
   for (set<int>::const_iterator it = deriv_id_set.begin();
        it != deriv_id_set.end(); it++)
     {
@@ -1677,28 +1734,54 @@ ModelTree::computeParamsDerivatives()
 void
 ModelTree::computeParamsDerivativesTemporaryTerms()
 {
-  map<expr_t, int> reference_count;
+  map<expr_t, pair<int, NodeTreeReference > > reference_count;
   params_derivs_temporary_terms.clear();
+  map<NodeTreeReference, temporary_terms_t> temp_terms_map;
+  temp_terms_map[eResidualsParamsDeriv]=params_derivs_temporary_terms_res;
+  temp_terms_map[eJacobianParamsDeriv]=params_derivs_temporary_terms_g1;
+  temp_terms_map[eResidualsParamsSecondDeriv]=params_derivs_temporary_terms_res2;
+  temp_terms_map[eJacobianParamsSecondDeriv]=params_derivs_temporary_terms_g12;
+  temp_terms_map[eHessianParamsDeriv]=params_derivs_temporary_terms_g2;
 
   for (first_derivatives_t::iterator it = residuals_params_derivatives.begin();
        it != residuals_params_derivatives.end(); it++)
-    it->second->computeTemporaryTerms(reference_count, params_derivs_temporary_terms, true);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      true, eResidualsParamsDeriv);
 
   for (second_derivatives_t::iterator it = jacobian_params_derivatives.begin();
        it != jacobian_params_derivatives.end(); it++)
-    it->second->computeTemporaryTerms(reference_count, params_derivs_temporary_terms, true);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      true, eJacobianParamsDeriv);
 
   for (second_derivatives_t::const_iterator it = residuals_params_second_derivatives.begin();
        it != residuals_params_second_derivatives.end(); ++it)
-    it->second->computeTemporaryTerms(reference_count, params_derivs_temporary_terms, true);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      true, eResidualsParamsSecondDeriv);
 
   for (third_derivatives_t::const_iterator it = jacobian_params_second_derivatives.begin();
        it != jacobian_params_second_derivatives.end(); ++it)
-    it->second->computeTemporaryTerms(reference_count, params_derivs_temporary_terms, true);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      true, eJacobianParamsSecondDeriv);
 
   for (third_derivatives_t::const_iterator it = hessian_params_derivatives.begin();
        it != hessian_params_derivatives.end(); ++it)
-    it->second->computeTemporaryTerms(reference_count, params_derivs_temporary_terms, true);
+    it->second->computeTemporaryTerms(reference_count,
+                                      temp_terms_map,
+                                      true, eHessianParamsDeriv);
+
+  for (map<NodeTreeReference, temporary_terms_t>::const_iterator it = temp_terms_map.begin();
+       it != temp_terms_map.end(); it++)
+    params_derivs_temporary_terms.insert(it->second.begin(), it->second.end());
+
+  params_derivs_temporary_terms_res  = temp_terms_map[eResidualsParamsDeriv];
+  params_derivs_temporary_terms_g1   = temp_terms_map[eJacobianParamsDeriv];
+  params_derivs_temporary_terms_res2 = temp_terms_map[eResidualsParamsSecondDeriv];
+  params_derivs_temporary_terms_g12  = temp_terms_map[eJacobianParamsSecondDeriv];
+  params_derivs_temporary_terms_g2   = temp_terms_map[eHessianParamsDeriv];
 }
 
 bool ModelTree::isNonstationary(int symb_id) const
