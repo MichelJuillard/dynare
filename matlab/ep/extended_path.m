@@ -37,7 +37,7 @@ function [ts, DynareResults] = extended_path(initialconditions, samplesize, exog
 [initialconditions, innovations, pfm, ep, verbosity, DynareOptions] = ...
     extended_path_initialization(initialconditions, samplesize, exogenousvariables, DynareOptions, DynareModel, DynareResults);
 
-[shocks, unexp_shocks, spfm_exo_simul, innovations, DynareResults] = extended_path_shocks(innovations, ep, samplesize, DynareModel, DynareResults);
+[shocks, spfm_exo_simul, innovations, DynareResults] = extended_path_shocks(innovations, ep, exogenousvariables, samplesize, DynareResults);
 
 % Initialize the matrix for the paths of the endogenous variables.
 endogenous_variables_paths = NaN(DynareModel.endo_nbr,samplesize+1);
