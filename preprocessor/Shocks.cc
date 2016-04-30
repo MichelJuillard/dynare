@@ -60,7 +60,7 @@ AbstractShocksStatement::writeDetShocks(ostream &output, ShockType type) const
               output << "M_.det_exp_shocks = [ M_.det_exp_shocks;" << endl;
               break;
             case Unexpected:
-              output << "M_.det_unexp_shocks = [ M_.unexp_det_shocks;" << endl;
+              output << "M_.det_unexp_shocks = [ M_.det_unexp_shocks;" << endl;
               break;
             default:
               cerr << "Shocks: this shouldn't happen." << endl;
@@ -379,14 +379,14 @@ void
 UnexpShocksStatement::writeOutput(ostream &output, const string &basename, bool minimal_workspace) const
 {
   output << "%" << endl
-         << "% EXPECTED_SHOCKS instructions" << endl
+         << "% UNEXPECTED_SHOCKS instructions" << endl
          << "%" << endl;
 
   if (overwrite)
-    output << "M_.unexp_det_shocks = [];" << endl;
+    output << "M_.det_unexp_shocks = [];" << endl;
 
 
-  writeDetShocks(output,Expected);
+  writeDetShocks(output,Unexpected);
 }
 
 MShocksStatement::MShocksStatement(bool overwrite_arg,
