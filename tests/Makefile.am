@@ -429,6 +429,7 @@ lmmcp/sw_newton.m.trs: lmmcp/sw_lmmcp.m.trs
 lmmcp/sw_newton.o.trs: lmmcp/sw_lmmcp.o.trs
 
 loglinear/example4_loglinear_lagged_exogenous_a.m.trs: example4_loglinear_lagged_exogenous.m.trs 
+loglinear/example4_loglinear_lagged_exogenous_a.o.trs: loglinear/example4_loglinear_lagged_exogenous.o.trs 
 
 # Matlab TRS Files
 M_TRS_FILES = $(patsubst %.mod, %.m.trs, $(MODFILES))
