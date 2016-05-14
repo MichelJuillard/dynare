@@ -1,4 +1,5 @@
-function [shocks, spfm_exo_simul, innovations, DynareResults] = extended_path_shocks(innovations, ep, exogenousvariables, sample_size, DynareResults); 
+function [shocks, spfm_exo_simul, innovations, DynareResults] = ...
+    extended_path_shocks(innovations, ep, exogenousvariables, sample_size, DynareModel, DynareResults); 
 
 % Copyright (C) 2016 Dynare Team
 %
@@ -23,6 +24,11 @@ if isempty(exogenousvariables)
       case 'gaussian'
         shocks = transpose(transpose(innovations.covariance_matrix_upper_cholesky)*randn(innovations.effective_number_of_shocks,sample_size));
         shocks(:,innovations.positive_var_indx) = shocks;
+      case 'calibrated'
+        options.periods = sample_size;
+        DynareResults = make_ex_(DynareModel,options,DynareResults);
+        shocks = DynareResults.exo_simul(2:end,:);
+        innovations.positive_var_indx = find(sum(abs(shocks)>0));
       otherwise
         error(['extended_path:: ' ep.innovation_distribution ' distribution for the structural innovations is not (yet) implemented!'])
     end
