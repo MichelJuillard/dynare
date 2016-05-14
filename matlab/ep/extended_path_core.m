@@ -1,3 +1,4 @@
+
 function [y, info_convergence] = extended_path_core(periods,endo_nbr,exo_nbr,positive_var_indx, ...
                                 exo_simul,init,initial_conditions,...
                                 steady_state, ...
@@ -49,7 +50,8 @@ if flag
         options.lmmcp = olmmcp;
         options.solve_algo = solve_algo;
         options.stack_solve_algo = stack_solve_algo;
-        [tmp,flag] = perfect_foresight_solver_core(M,options,oo);
+        tmp = perfect_foresight_solver_core(M,options,oo);
+        flag = tmp.deterministic_simulation.status;
         if ~flag && ~options.no_homotopy
             exo_orig = oo.exo_simul;
             endo_simul = repmat(steady_state,1,periods+1);
