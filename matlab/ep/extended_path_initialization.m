@@ -51,12 +51,10 @@ if DynareModel.exo_det_nbr~=0
 end
 
 % Set default initial conditions.
-if isempty(initial_conditions)
-    if isempty(DynareModel.endo_histval)
-        initial_conditions = DynareResults.steady_state;
-    else
-        initial_conditions = DynareModel.endo_histval;
-    end
+if isempty(DynareModel.endo_histval)
+    initial_conditions = DynareResults.steady_state;
+else
+    initial_conditions = DynareModel.endo_histval;
 end
 
 % Set the number of periods for the (stochastic) perfect foresight model
