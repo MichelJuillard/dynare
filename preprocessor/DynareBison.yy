@@ -208,8 +208,6 @@ statement : parameters
           | histval
           | init_param
           | shocks
-          | expected_shocks
-          | unexpected_shocks
           | mshocks
           | sigma_e
           | steady
@@ -808,22 +806,6 @@ shock_elem : det_shock_elem
 det_shock_elem : VAR symbol ';' PERIODS period_list ';' VALUES value_list ';'
                  { driver.add_det_shock($2, false); }
                ;
-
-expected_shocks : EXPECTED_SHOCKS ';' exp_shock_list END ';' { driver.end_exp_shocks(false); }
-                | EXPECTED_SHOCKS '(' OVERWRITE ')' ';' exp_shock_list END ';' { driver.end_exp_shocks(true); }
-                ;
-
-exp_shock_list : exp_shock_list det_shock_elem
-               | det_shock_elem
-               ;
-
-unexpected_shocks : UNEXPECTED_SHOCKS ';' unexp_shock_list END ';' { driver.end_unexp_shocks(false); }
-                  | EXPECTED_SHOCKS '(' OVERWRITE ')' ';' unexp_shock_list END ';' { driver.end_unexp_shocks(true); }
-                  ;
-
-unexp_shock_list : unexp_shock_list det_shock_elem
-                 | det_shock_elem
-                 ;
 
 svar_identification : SVAR_IDENTIFICATION {driver.begin_svar_identification();} ';' svar_identification_list END ';'
                       { driver.end_svar_identification(); }
